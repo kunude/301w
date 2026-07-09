@@ -49,7 +49,16 @@ jobs:
           libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf \
           python3 python3-pip python3-pyelftools qemu-utils re2c rsync scons \
           squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto \
-          xxd zlib1g-dev zstd
+          xxd zlib1g-dev zstd \
+          gcc-11 g++-11                          # <-- 新增：安装 GCC 11
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 \
+          --slave /usr/bin/g++ g++ /usr/bin/g++-11 \
+          --slave /usr/bin/gcov gcov /usr/bin/gcov-11
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 \
+          --slave /usr/bin/g++ g++ /usr/bin/g++-12 \
+          --slave /usr/bin/gcov gcov /usr/bin/gcov-12
+        gcc --version                            # <-- 新增：验证 GCC 版本
+        g++ --version                            # <-- 新增：验证 G++ 版本
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
