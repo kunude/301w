@@ -1,13 +1,3 @@
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build ImmortalWrt for QNAP 301W using GitHub Actions
-#
-
 name: Build ImmortalWrt for QNAP 301W
 
 on:
@@ -18,30 +8,26 @@ on:
         description: 'SSH connection to Actions'
         required: false
         default: 'false'
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'config/301w.config'
-  # schedule:
-  #   - cron: 0 20 * * 0  # 每周日 UTC 20:00 (北京时间周一凌晨4点)
+      release:
+        description: 'Upload to release'
+        required: false
+        default: 'false'
+  schedule:
+    - cron: 0 20 * * 0
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: master  # 或 master，根据需求选择
-  FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: config/301w.config
+  REPO_BRANCH: master
   DIY_P1_SH: scripts/diy-part1.sh
   DIY_P2_SH: scripts/diy-part2.sh
-  UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  RELEASE_TAG: 301w-$(date +%Y%m%d)
+  UPLOAD_RELEASE: ${{ github.event.inputs.release }}
   TZ: Asia/Shanghai
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id || !github.event.sender.id
 
     steps:
     - name: Checkout
@@ -66,20 +52,22 @@ jobs:
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
 
-    - name: Clone ImmortalWrt source code
+    - name: Clone ImmortalWrt source
+      working-directory: /workdir
       run: |
+        df -hT $PWD
         git clone --depth 1 -b $REPO_BRANCH $REPO_URL openwrt
-        cd openwrt
-        echo "src-git immortalwrt_packages https://github.com/immortalwrt/packages.git;$REPO_BRANCH" >> feeds.conf.default
-        echo "src-git immortalwrt_luci https://github.com/immortalwrt/luci.git;$REPO_BRANCH" >> feeds.conf.default
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-    - name: Run DIY script (before update feeds)
+    - name: Run DIY script (before feeds)
       run: |
         cd openwrt
-        if [ -f "../$DIY_P1_SH" ]; then
-          chmod +x "../$DIY_P1_SH"
-          "../$DIY_P1_SH"
+        if [ -f "$GITHUB_WORKSPACE/$DIY_P1_SH" ]; then
+          chmod +x "$GITHUB_WORKSPACE/$DIY_P1_SH"
+          "$GITHUB_WORKSPACE/$DIY_P1_SH"
         fi
 
     - name: Update feeds
@@ -88,19 +76,128 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    - name: Run DIY script (after update feeds)
+    - name: Run DIY script (after feeds)
       run: |
         cd openwrt
-        if [ -f "../$DIY_P2_SH" ]; then
-          chmod +x "../$DIY_P2_SH"
-          "../$DIY_P2_SH"
+        if [ -f "$GITHUB_WORKSPACE/$DIY_P2_SH" ]; then
+          chmod +x "$GITHUB_WORKSPACE/$DIY_P2_SH"
+          "$GITHUB_WORKSPACE/$DIY_P2_SH"
         fi
 
-    - name: Load custom configuration
+    - name: Generate config for 301W
       run: |
         cd openwrt
-        cp -f "../$CONFIG_FILE" .config
+        cat > .config << 'EOF'
+        # ============================================
+        # Target: QNAP 301W (IPQ8072A / qualcommax/ipq807x)
+        # ============================================
+        CONFIG_TARGET_qualcommax=y
+        CONFIG_TARGET_qualcommax_ipq807x=y
+        CONFIG_TARGET_qualcommax_ipq807x_DEVICE_qnap_301w=y
+
+        # Image options
+        CONFIG_TARGET_KERNEL_PARTSIZE=64
+        CONFIG_TARGET_ROOTFS_PARTSIZE=512
+        CONFIG_TARGET_ROOTFS_SQUASHFS=y
+
+        # ============================================
+        # Basic System
+        # ============================================
+        CONFIG_PACKAGE_dnsmasq-full=y
+        # CONFIG_PACKAGE_dnsmasq is not set
+
+        # ============================================
+        # LuCI Web Interface
+        # ============================================
+        CONFIG_PACKAGE_luci=y
+        CONFIG_PACKAGE_luci-ssl=y
+        CONFIG_PACKAGE_luci-theme-bootstrap=y
+        # CONFIG_PACKAGE_luci-theme-argon=y  # 可选主题
+
+        # ============================================
+        # Wireless (ath11k Wi-Fi 6)
+        # ============================================
+        CONFIG_PACKAGE_kmod-ath11k=y
+        CONFIG_PACKAGE_ath11k-firmware-ipq8074=y
+        CONFIG_PACKAGE_wpad-openssl=y
+        CONFIG_PACKAGE_hostapd-common=y
+
+        # ============================================
+        # 10G PHY (Aquantia - 301W 必需)
+        # ============================================
+        CONFIG_PACKAGE_kmod-aq_phy=y
+
+        # ============================================
+        # NSS Hardware Offload (IPQ807x 硬件加速)
+        # ============================================
+        CONFIG_PACKAGE_kmod-qca-nss-ecm=y
+        CONFIG_PACKAGE_kmod-qca-nss-drv=y
+        CONFIG_PACKAGE_kmod-qca-nss-dp=y
+
+        # ============================================
+        # USB Support
+        # ============================================
+        CONFIG_PACKAGE_kmod-usb3=y
+        CONFIG_PACKAGE_kmod-usb-storage=y
+        CONFIG_PACKAGE_kmod-usb-storage-extras=y
+        CONFIG_PACKAGE_kmod-usb-storage-uas=y
+
+        # ============================================
+        # Filesystem
+        # ============================================
+        CONFIG_PACKAGE_kmod-fs-ext4=y
+        CONFIG_PACKAGE_kmod-fs-ntfs=y
+        CONFIG_PACKAGE_kmod-fs-vfat=y
+        CONFIG_PACKAGE_e2fsprogs=y
+        CONFIG_PACKAGE_losetup=y
+        CONFIG_PACKAGE_resize2fs=y
+
+        # ============================================
+        # IPv6 Support
+        # ============================================
+        CONFIG_PACKAGE_ipv6helper=y
+        CONFIG_PACKAGE_kmod-ipt-nat6=y
+
+        # ============================================
+        # Network Utilities
+        # ============================================
+        CONFIG_PACKAGE_kmod-nft-offload=y
+        CONFIG_PACKAGE_firewall4=y
+        CONFIG_PACKAGE_kmod-tun=y
+
+        # ============================================
+        # Optional: Common LuCI Apps (按需取消注释)
+        # ============================================
+        # CONFIG_PACKAGE_luci-app-upnp=y
+        # CONFIG_PACKAGE_luci-app-ddns=y
+        # CONFIG_PACKAGE_luci-app-wol=y
+        # CONFIG_PACKAGE_luci-app-nlbwmon=y
+        # CONFIG_PACKAGE_luci-app-ttyd=y
+        # CONFIG_PACKAGE_luci-app-vlmcsd=y
+        # CONFIG_PACKAGE_luci-app-openclash=y
+        # CONFIG_PACKAGE_luci-app-passwall=y
+        # CONFIG_PACKAGE_luci-app-homeproxy=y
+
+        # ============================================
+        # Optional: Docker Support (301W 1GB/2GB 内存可开启)
+        # ============================================
+        # CONFIG_PACKAGE_luci-app-dockerman=y
+        # CONFIG_PACKAGE_docker=y
+        # CONFIG_PACKAGE_dockerd=y
+        EOF
         make defconfig
+        echo "=== Target device verification ==="
+        grep "CONFIG_TARGET_DEVICE" .config | head -5
+        echo "=== 301W specific packages ==="
+        grep -E "qnap_301w|aq_phy|nss" .config | head -10
+
+    - name: Copy custom files
+      run: |
+        cd openwrt
+        if [ -d "$GITHUB_WORKSPACE/files" ]; then
+          cp -rf $GITHUB_WORKSPACE/files/* files/
+          echo "Custom files copied"
+        fi
 
     - name: SSH connection to Actions
       uses: mxschmitt/action-tmate@v3
@@ -112,19 +209,22 @@ jobs:
         make download -j8 || make download -j1 V=s
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile ImmortalWrt firmware
+    - name: Compile ImmortalWrt
+      id: compile
       run: |
         cd openwrt
         make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
-      id: compile
+        echo "=== Output files ==="
+        ls -la bin/targets/qualcommax/ipq807x/
 
-    - name: Organize firmware files
+    - name: Organize firmware
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
       run: |
-        cd openwrt/bin/targets/*/*
+        cd openwrt/bin/targets/qualcommax/ipq807x/
         rm -rf packages
         echo "FIRMWARE_PATH=$(pwd)" >> $GITHUB_ENV
+        echo "=== Firmware files ==="
         ls -la
 
     - name: Upload firmware to artifact
@@ -152,8 +252,11 @@ jobs:
           - 编译时间: ${{ steps.tag.outputs.release_date }}
           - 源码分支: ${{ env.REPO_BRANCH }}
           - 设备: QNAP QHora-301W (IPQ8072A)
+          - 平台: qualcommax/ipq807x
           - 默认IP: 192.168.1.1
           - 默认密码: 无
+          - 10G PHY: 已包含 Aquantia 驱动
+          - NSS 加速: 已启用
         files: ${{ env.FIRMWARE_PATH }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
