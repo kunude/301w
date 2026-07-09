@@ -1,0 +1,159 @@
+#
+# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build ImmortalWrt for QNAP 301W using GitHub Actions
+#
+
+name: Build ImmortalWrt for QNAP 301W
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'config/301w.config'
+  # schedule:
+  #   - cron: 0 20 * * 0  # 每周日 UTC 20:00 (北京时间周一凌晨4点)
+
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-23.05  # 或 master，根据需求选择
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: config/301w.config
+  DIY_P1_SH: scripts/diy-part1.sh
+  DIY_P2_SH: scripts/diy-part2.sh
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  RELEASE_TAG: 301w-$(date +%Y%m%d)
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Initialize environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install -y \
+          ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk \
+          gettext gcc-multilib g++-multilib git gperf haveged help2man intltool \
+          libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev \
+          libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev \
+          libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf \
+          python3 python3-pip python3-pyelftools qemu-utils re2c rsync scons \
+          squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto \
+          xxd zlib1g-dev zstd
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+
+    - name: Clone ImmortalWrt source code
+      run: |
+        git clone --depth 1 -b $REPO_BRANCH $REPO_URL openwrt
+        cd openwrt
+        echo "src-git immortalwrt_packages https://github.com/immortalwrt/packages.git;$REPO_BRANCH" >> feeds.conf.default
+        echo "src-git immortalwrt_luci https://github.com/immortalwrt/luci.git;$REPO_BRANCH" >> feeds.conf.default
+
+    - name: Run DIY script (before update feeds)
+      run: |
+        cd openwrt
+        if [ -f "../$DIY_P1_SH" ]; then
+          chmod +x "../$DIY_P1_SH"
+          "../$DIY_P1_SH"
+        fi
+
+    - name: Update feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: cd openwrt && ./scripts/feeds install -a
+
+    - name: Run DIY script (after update feeds)
+      run: |
+        cd openwrt
+        if [ -f "../$DIY_P2_SH" ]; then
+          chmod +x "../$DIY_P2_SH"
+          "../$DIY_P2_SH"
+        fi
+
+    - name: Load custom configuration
+      run: |
+        cd openwrt
+        cp -f "../$CONFIG_FILE" .config
+        make defconfig
+
+    - name: SSH connection to Actions
+      uses: mxschmitt/action-tmate@v3
+      if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
+
+    - name: Download package sources
+      run: |
+        cd openwrt
+        make download -j8 || make download -j1 V=s
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile ImmortalWrt firmware
+      run: |
+        cd openwrt
+        make -j$(nproc) || make -j1 V=s
+        echo "status=success" >> $GITHUB_OUTPUT
+      id: compile
+
+    - name: Organize firmware files
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE_PATH=$(pwd)" >> $GITHUB_ENV
+        ls -la
+
+    - name: Upload firmware to artifact
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ImmortalWrt-301W-${{ env.RELEASE_TAG }}
+        path: ${{ env.FIRMWARE_PATH }}/*
+
+    - name: Generate release tag
+      if: env.UPLOAD_RELEASE == 'true' && steps.compile.outputs.status == 'success'
+      id: tag
+      run: |
+        echo "release_tag=$(date +%Y%m%d-%H%M)" >> $GITHUB_OUTPUT
+        echo "release_date=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware to release
+      if: env.UPLOAD_RELEASE == 'true' && steps.compile.outputs.status == 'success'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        name: ImmortalWrt 301W ${{ steps.tag.outputs.release_date }}
+        body: |
+          ## ImmortalWrt for QNAP QHora-301W
+          - 编译时间: ${{ steps.tag.outputs.release_date }}
+          - 源码分支: ${{ env.REPO_BRANCH }}
+          - 设备: QNAP QHora-301W (IPQ8072A)
+          - 默认IP: 192.168.1.1
+          - 默认密码: 无
+        files: ${{ env.FIRMWARE_PATH }}/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
