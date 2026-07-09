@@ -11,7 +11,7 @@ on:
       release:
         description: 'Upload to release'
         required: false
-        default: 'false'
+        default: 'true'
   schedule:
     - cron: 0 20 * * 0
 
