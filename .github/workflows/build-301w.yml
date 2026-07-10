@@ -67,7 +67,11 @@ jobs:
         echo "=== Device definitions ==="
         grep -r "qnap_301w" target/linux/qualcommax/ | head -5 || true
         echo "=== DTS files ==="
-        ls -la arch/arm64/boot/dts/qcom/ | grep -i 301w || true
+        find . -name "*301w*" -type f | grep -E "\.(dts|dtsi)$" | head -5 || true
+        echo "=== Kernel config for IPQ8074 ==="
+        grep "IPQ8074" target/linux/qualcommax/ipq807x/config-* 2>/dev/null | head -5 || true
+        echo "=== Default device packages ==="
+        grep -A2 "define Device/qnap_301w" target/linux/qualcommax/image/ipq807x.mk || true
 
     - name: Run DIY script (before feeds)
       run: |
