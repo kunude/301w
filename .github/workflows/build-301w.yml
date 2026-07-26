@@ -16,7 +16,7 @@ on:
     - cron: 0 20 * * *
 
 env:
-  REPO_URL: https://github.com/kunude/immortalwrt-301w
+  REPO_URL: https://github.com/laipeng668/immortalwrt
   REPO_BRANCH: master
   CONFIG_FILE: config/301w.config
   DIY_P1_SH: scripts/diy-part1.sh
