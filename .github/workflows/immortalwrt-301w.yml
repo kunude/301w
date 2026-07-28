@@ -1,4 +1,4 @@
-name: Build ImmortalWrt for QNAP 301W
+name: ImmortalWrt for QNAP 301W
 
 on:
   repository_dispatch:
