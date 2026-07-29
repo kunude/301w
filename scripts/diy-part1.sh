@@ -18,4 +18,6 @@ sed -i 's/ImmortalWrt/QNAP-301W/g' package/base-files/files/bin/config_generate
 # 301W 专用：确保 10G PHY 固件正确
 echo "确保 10G Aquantia PHY 支持..."
 
+git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
+
 exit 0
