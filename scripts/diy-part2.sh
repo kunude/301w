@@ -15,8 +15,4 @@
 # 301W 专用：确保 bootcmd 设置正确（用于 10G 网口）
 # 注意：这是编译时设置，实际刷机后还需要在 uboot 中设置
 
-git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
-./scripts/feeds update -a
-./scripts/feeds install -a
-
 exit 0
