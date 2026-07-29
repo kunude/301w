@@ -16,7 +16,7 @@ on:
     - cron: 0 20 * * *
 
 env:
-  REPO_URL: https://github.comJuliusBairaktaris/openwrt-nss-edma
+  REPO_URL: https://github.com/JuliusBairaktaris/openwrt-nss-edma
   REPO_BRANCH: nss-edma-rework
   CONFIG_FILE: config/301w.config
   DIY_P1_SH: scripts/diy-part1.sh
