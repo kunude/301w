@@ -5,7 +5,7 @@
 #
 
 echo 'src-git immortalwrt_pkg https://github.com/immortalwrt/packages.git' >> feeds.conf.default
-echo 'src-git immortalwrt_luci https://github.com/immortalwrt/luci.git' >> feeds.conf.default
+# echo 'src-git immortalwrt_luci https://github.com/immortalwrt/luci.git' >> feeds.conf.default
 
 # 示例：添加第三方软件源
 # echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git;main" >> feeds.conf.default
