@@ -168,7 +168,7 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         name: ImmortalWrt 301W ${{ steps.tag.outputs.release_date }}
         body: |
-          ## ImmortalWrt for QNAP QHora-301W
+          ## openwrt for QNAP QHora-301W
           - 编译时间: ${{ steps.tag.outputs.release_date }}
           - 源码分支: ${{ env.REPO_BRANCH }}
           - 设备: QNAP QHora-301W (IPQ8072A)
