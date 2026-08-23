@@ -19,7 +19,7 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
   CONFIG_FILE: config/homeproxy.config
-  # 注释掉原有的DIY脚本，不再使用
+  # 不再使用 DIY 脚本（定制已合并到 homeproxy.sh 中）
   # DIY_P1_SH: scripts/diy-part3.sh
   # DIY_P2_SH: scripts/diy-part2.sh
   UPLOAD_FIRMWARE: true
@@ -74,9 +74,7 @@ jobs:
         echo "=== Default device packages ==="
         grep -A2 "define Device/qnap_301w" target/linux/qualcommax/image/ipq807x.mk || true
 
-    # 移除原有的 DIY 前脚本（如果有额外包添加，则跳过）
-    # - name: Run DIY script (before feeds)
-    #   run: ...
+    # 注意：DIY 前脚本已移除，所有定制（IP、主机名、feeds 源）已合并到 homeproxy.sh 中
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -90,9 +88,7 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/scripts/Scripts/homeproxy.sh
         bash $GITHUB_WORKSPACE/scripts/Scripts/homeproxy.sh
 
-    # 移除原有的 DIY 后脚本（避免引入其他包或修改）
-    # - name: Run DIY script (after feeds)
-    #   run: ...
+    # 注意：DIY 后脚本已移除，不再执行
 
     - name: Load custom config
       run: |
@@ -166,9 +162,10 @@ jobs:
           - 源码分支: ${{ env.REPO_BRANCH }}
           - 设备: QNAP QHora-301W (IPQ8072A)
           - 平台: qualcommax/ipq807x
-          - 默认IP: 192.168.1.1
+          - 默认IP: 192.168.35.1 (已在 homeproxy.sh 中修改)
+          - 默认主机名: QNAP-301W
           - 默认密码: 无
-          - 仅包含 homeproxy (不含 passwall 等其他代理)
+          - 仅包含 homeproxy（不含 passwall 等其他代理）
         files: ${{ env.FIRMWARE_PATH }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
