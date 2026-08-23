@@ -19,8 +19,9 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
   CONFIG_FILE: config/homeproxy.config
-  DIY_P1_SH: scripts/diy-part3.sh
-  DIY_P2_SH: scripts/diy-part2.sh
+  # 注释掉原有的DIY脚本，不再使用
+  # DIY_P1_SH: scripts/diy-part3.sh
+  # DIY_P2_SH: scripts/diy-part2.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: ${{ github.event.inputs.release }}
   TZ: Asia/Shanghai
@@ -73,13 +74,9 @@ jobs:
         echo "=== Default device packages ==="
         grep -A2 "define Device/qnap_301w" target/linux/qualcommax/image/ipq807x.mk || true
 
-    - name: Run DIY script (before feeds)
-      run: |
-        cd openwrt
-        if [ -f "$GITHUB_WORKSPACE/$DIY_P1_SH" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_P1_SH"
-          "$GITHUB_WORKSPACE/$DIY_P1_SH"
-        fi
+    # 移除原有的 DIY 前脚本（如果有额外包添加，则跳过）
+    # - name: Run DIY script (before feeds)
+    #   run: ...
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -87,19 +84,15 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    - name: Install third-party packages (homeproxy, passwall)
+    - name: Install homeproxy only (third-party packages)
       working-directory: ./openwrt/package
       run: |
-          chmod +x $GITHUB_WORKSPACE/scripts/update-packages.sh
-          bash $GITHUB_WORKSPACE/scripts/update-packages.sh 
-          
-    - name: Run DIY script (after feeds)
-      run: |
-        cd openwrt
-        if [ -f "$GITHUB_WORKSPACE/$DIY_P2_SH" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_P2_SH"
-          "$GITHUB_WORKSPACE/$DIY_P2_SH"
-        fi
+        chmod +x $GITHUB_WORKSPACE/scripts/Scripts/homeproxy.sh
+        bash $GITHUB_WORKSPACE/scripts/Scripts/homeproxy.sh
+
+    # 移除原有的 DIY 后脚本（避免引入其他包或修改）
+    # - name: Run DIY script (after feeds)
+    #   run: ...
 
     - name: Load custom config
       run: |
@@ -168,13 +161,14 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         name: ImmortalWrt 301W ${{ steps.tag.outputs.release_date }}
         body: |
-          ## ImmortalWrt for QNAP QHora-301W
+          ## ImmortalWrt for QNAP QHora-301W (homeproxy only)
           - 编译时间: ${{ steps.tag.outputs.release_date }}
           - 源码分支: ${{ env.REPO_BRANCH }}
           - 设备: QNAP QHora-301W (IPQ8072A)
           - 平台: qualcommax/ipq807x
           - 默认IP: 192.168.1.1
           - 默认密码: 无
+          - 仅包含 homeproxy (不含 passwall 等其他代理)
         files: ${{ env.FIRMWARE_PATH }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
