@@ -18,7 +18,6 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
-  # CONFIG_FILE 已不再需要，因为我们在步骤中动态生成配置
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: ${{ github.event.inputs.release }}
   TZ: Asia/Shanghai
@@ -83,6 +82,18 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
+    - name: Remove broken feed packages
+      run: |
+        cd openwrt
+        echo "Removing broken feed packages that cause syntax errors..."
+        rm -rf package/feeds/packages/bmx7-dnsupdate 2>/dev/null || true
+        rm -rf package/feeds/luci/luci-app-babeld 2>/dev/null || true
+        rm -rf package/feeds/luci/luci-app-bmx7 2>/dev/null || true
+        rm -rf package/feeds/luci/luci-proto-batman-adv 2>/dev/null || true
+        rm -rf package/feeds/packages/prometheus-node-exporter-lua 2>/dev/null || true
+        rm -rf package/feeds/video/sdl3 2>/dev/null || true
+        echo "Done removing broken packages."
+
     - name: Install homeproxy
       working-directory: ./openwrt
       run: |
@@ -130,6 +141,28 @@ jobs:
         # Wi-Fi
         CONFIG_PACKAGE_wpad-openssl=y
         
+        # DDNS-Go
+        CONFIG_PACKAGE_ddns-go=y
+        CONFIG_PACKAGE_luci-app-ddns-go=y
+        CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y
+        
+        # UDPXY
+        CONFIG_PACKAGE_udpxy=y
+        CONFIG_PACKAGE_luci-app-udpxy=y
+        CONFIG_PACKAGE_luci-i18n-udpxy-zh-cn=y
+        
+        # WireGuard
+        CONFIG_PACKAGE_kmod-wireguard=y
+        CONFIG_PACKAGE_luci-proto-wireguard=y
+        
+        # Lucky
+        CONFIG_PACKAGE_lucky=y
+        CONFIG_PACKAGE_luci-app-lucky=y
+        CONFIG_PACKAGE_luci-i18n-lucky-zh-cn=y
+        
+        # QRencode
+        CONFIG_PACKAGE_qrencode=y
+        
         # Build options
         CONFIG_DEVEL=y
         CONFIG_BUILD_PATENTED=y
@@ -150,6 +183,12 @@ jobs:
         echo ""
         echo "sing-box:"
         grep "CONFIG_PACKAGE_sing-box" .config
+        echo ""
+        echo "DDNS-Go:"
+        grep "CONFIG_PACKAGE_ddns-go" .config
+        echo ""
+        echo "Lucky:"
+        grep "CONFIG_PACKAGE_lucky" .config
         echo ""
         echo "Total packages: $(grep -c '^CONFIG_PACKAGE_' .config)"
 
@@ -218,7 +257,14 @@ jobs:
           - 默认IP: 192.168.35.1
           - 默认主机名: QNAP-301W
           - 默认密码: 无
-          - 仅包含 homeproxy（不含 passwall 等其他代理）
+          - 包含组件:
+            - homeproxy (代理)
+            - sing-box (核心)
+            - DDNS-Go (动态DNS)
+            - UDPXY (组播代理)
+            - WireGuard (VPN)
+            - Lucky (端口转发)
+            - QRencode (二维码生成)
         files: ${{ env.FIRMWARE_PATH }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
