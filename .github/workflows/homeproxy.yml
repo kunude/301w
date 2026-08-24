@@ -18,7 +18,7 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
-  CONFIG_FILE: config/homeproxy.config
+  # CONFIG_FILE 已不再需要，因为我们在步骤中动态生成配置
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: ${{ github.event.inputs.release }}
   TZ: Asia/Shanghai
@@ -71,7 +71,6 @@ jobs:
         echo "=== Default device packages ==="
         grep -A2 "define Device/qnap_301w" target/linux/qualcommax/image/ipq807x.mk || true
 
-    # ---- 新增预处理步骤 ----
     - name: Pre-process (add feed source, modify IP/hostname)
       run: |
         cd openwrt
@@ -84,7 +83,6 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # ---- 修改为调用 homeproxy.sh install ----
     - name: Install homeproxy
       working-directory: ./openwrt
       run: |
@@ -93,67 +91,67 @@ jobs:
     - name: Generate clean config for homeproxy
       run: |
         cd openwrt
-    
-    # 完全使用脚本生成配置，不依赖任何预设文件
-     cat > .config << 'EOF'
-    # Target: QNAP 301W
-     CONFIG_TARGET_qualcommax=y
-     CONFIG_TARGET_qualcommax_ipq807x=y
-     CONFIG_TARGET_qualcommax_ipq807x_DEVICE_qnap_301w=y
-     CONFIG_TARGET_KERNEL_PARTSIZE=64
-     CONFIG_TARGET_ROOTFS_PARTSIZE=512
-     CONFIG_TARGET_ROOTFS_SQUASHFS=y
-    
-    # LuCI
-     CONFIG_PACKAGE_luci=y
-     CONFIG_PACKAGE_luci-ssl-openssl=y
-     CONFIG_PACKAGE_luci-app-firewall=y
-     CONFIG_PACKAGE_luci-app-package-manager=y
-     CONFIG_LUCI_LANG_zh_Hans=y
-    
-    # Homeproxy
-     CONFIG_PACKAGE_luci-app-homeproxy=y
-     CONFIG_PACKAGE_luci-homeproxy-zh-cn=y
-     CONFIG_PACKAGE_sing-box=y
-    
-    # TProxy support
-     CONFIG_PACKAGE_kmod-nft-tproxy=y
-     CONFIG_PACKAGE_kmod-nf-socket=y
-    
-    # Tools
-     CONFIG_PACKAGE_curl=y
-     CONFIG_PACKAGE_htop=y
-     CONFIG_PACKAGE_nano=y
-     CONFIG_PACKAGE_iperf3=y
-     CONFIG_PACKAGE_tcpdump=y
-     CONFIG_PACKAGE_ethtool=y
-     CONFIG_PACKAGE_jq=y
-    
-    # Wi-Fi
-     CONFIG_PACKAGE_wpad-openssl=y
-    
-    # Build options
-     CONFIG_DEVEL=y
-     CONFIG_BUILD_PATENTED=y
-     CONFIG_TARGET_OPTIMIZATION="-O2 -pipe -mcpu=cortex-a53+crc+crypto"
-     CONFIG_USE_GC_SECTIONS=y
-     EOF
-    
-    # 解决依赖
-     make defconfig
-     
-    # 验证配置
-     echo "=== Verification ==="
-     echo "Target:"
-     grep "CONFIG_TARGET_DEVICE" .config
-     echo ""
-     echo "Homeproxy:"
-     grep -E "CONFIG_PACKAGE.*homeproxy" .config
-     echo ""
-     echo "sing-box:"
-     grep "CONFIG_PACKAGE_sing-box" .config
-     echo ""
-     echo "Total packages: $(grep -c '^CONFIG_PACKAGE_' .config)"
+        
+        # 完全使用脚本生成配置，不依赖任何预设文件
+        cat > .config << 'EOF'
+        # Target: QNAP 301W
+        CONFIG_TARGET_qualcommax=y
+        CONFIG_TARGET_qualcommax_ipq807x=y
+        CONFIG_TARGET_qualcommax_ipq807x_DEVICE_qnap_301w=y
+        CONFIG_TARGET_KERNEL_PARTSIZE=64
+        CONFIG_TARGET_ROOTFS_PARTSIZE=512
+        CONFIG_TARGET_ROOTFS_SQUASHFS=y
+        
+        # LuCI
+        CONFIG_PACKAGE_luci=y
+        CONFIG_PACKAGE_luci-ssl-openssl=y
+        CONFIG_PACKAGE_luci-app-firewall=y
+        CONFIG_PACKAGE_luci-app-package-manager=y
+        CONFIG_LUCI_LANG_zh_Hans=y
+        
+        # Homeproxy
+        CONFIG_PACKAGE_luci-app-homeproxy=y
+        CONFIG_PACKAGE_luci-homeproxy-zh-cn=y
+        CONFIG_PACKAGE_sing-box=y
+        
+        # TProxy support
+        CONFIG_PACKAGE_kmod-nft-tproxy=y
+        CONFIG_PACKAGE_kmod-nf-socket=y
+        
+        # Tools
+        CONFIG_PACKAGE_curl=y
+        CONFIG_PACKAGE_htop=y
+        CONFIG_PACKAGE_nano=y
+        CONFIG_PACKAGE_iperf3=y
+        CONFIG_PACKAGE_tcpdump=y
+        CONFIG_PACKAGE_ethtool=y
+        CONFIG_PACKAGE_jq=y
+        
+        # Wi-Fi
+        CONFIG_PACKAGE_wpad-openssl=y
+        
+        # Build options
+        CONFIG_DEVEL=y
+        CONFIG_BUILD_PATENTED=y
+        CONFIG_TARGET_OPTIMIZATION="-O2 -pipe -mcpu=cortex-a53+crc+crypto"
+        CONFIG_USE_GC_SECTIONS=y
+        EOF
+        
+        # 解决依赖
+        make defconfig
+        
+        # 验证配置
+        echo "=== Verification ==="
+        echo "Target:"
+        grep "CONFIG_TARGET_DEVICE" .config
+        echo ""
+        echo "Homeproxy:"
+        grep -E "CONFIG_PACKAGE.*homeproxy" .config
+        echo ""
+        echo "sing-box:"
+        grep "CONFIG_PACKAGE_sing-box" .config
+        echo ""
+        echo "Total packages: $(grep -c '^CONFIG_PACKAGE_' .config)"
 
     - name: Copy custom files
       run: |
