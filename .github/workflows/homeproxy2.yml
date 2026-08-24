@@ -1,4 +1,4 @@
-name: ImmortalWrt homeproxy for QNAP 301W
+name: ImmortalWrt homeproxy2 for QNAP 301W
 
 on:
   repository_dispatch:
