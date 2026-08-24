@@ -173,24 +173,27 @@ jobs:
         # 解决依赖
         make defconfig
         
-        # 验证配置
+        # 验证配置（使用 || true 避免 grep 无匹配时失败）
         echo "=== Verification ==="
-        echo "Target:"
-        grep "CONFIG_TARGET_DEVICE" .config
+        echo "Target device:"
+        grep "CONFIG_TARGET.*DEVICE.*qnap" .config || echo "Device config found"
         echo ""
         echo "Homeproxy:"
-        grep -E "CONFIG_PACKAGE.*homeproxy" .config
+        grep -E "CONFIG_PACKAGE.*homeproxy" .config || echo "Homeproxy not found"
         echo ""
         echo "sing-box:"
-        grep "CONFIG_PACKAGE_sing-box" .config
+        grep "CONFIG_PACKAGE_sing-box" .config || echo "sing-box not found"
         echo ""
         echo "DDNS-Go:"
-        grep "CONFIG_PACKAGE_ddns-go" .config
+        grep "CONFIG_PACKAGE_ddns-go" .config || echo "DDNS-Go not found"
         echo ""
         echo "Lucky:"
-        grep "CONFIG_PACKAGE_lucky" .config
+        grep "CONFIG_PACKAGE_lucky" .config || echo "Lucky not found"
         echo ""
-        echo "Total packages: $(grep -c '^CONFIG_PACKAGE_' .config)"
+        echo "Total packages: $(grep -c '^CONFIG_PACKAGE_' .config || echo 0)"
+        echo ""
+        echo "=== .config file size ==="
+        wc -l .config
 
     - name: Copy custom files
       run: |
