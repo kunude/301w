@@ -11,7 +11,6 @@ pre_process() {
     echo "Running pre-process: add feed source, modify IP & hostname"
     echo "=========================================="
 
-    # 确保在 openwrt 根目录
     cd "$GITHUB_WORKSPACE/openwrt" || exit 1
 
     # 添加 feeds 源（如果尚未添加）
@@ -43,7 +42,6 @@ UPDATE_PACKAGE() {
     echo "Processing: $PKG_NAME from $PKG_REPO"
     echo "=========================================="
 
-    # 删除 feeds 中可能存在的同名软件包
     for NAME in "${PKG_LIST[@]}"; do
         echo "Search directory: $NAME"
         local FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
@@ -57,14 +55,12 @@ UPDATE_PACKAGE() {
         fi
     done
 
-    # 克隆 GitHub 仓库
     git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/$PKG_REPO.git"
     if [ ! -d "$REPO_NAME" ]; then
         echo "ERROR: Failed to clone $PKG_REPO"
         return 1
     fi
 
-    # 处理克隆的仓库
     if [[ "$PKG_SPECIAL" == "pkg" ]]; then
         find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
         rm -rf ./$REPO_NAME/
@@ -75,52 +71,16 @@ UPDATE_PACKAGE() {
     echo "Done: $PKG_NAME"
 }
 
-# ---------- 安装 homeproxy（包含 sing-box 依赖） ----------
+# ---------- 安装 homeproxy ----------
 install_homeproxy() {
     echo "=========================================="
-    echo "Installing homeproxy and its dependencies"
+    echo "Installing homeproxy"
     echo "=========================================="
 
-    # 确保在 package 目录
     cd "$GITHUB_WORKSPACE/openwrt/package" || exit 1
 
-    # ---- 处理 sing-box 依赖 ----
-    echo "Removing conflicting sing-box packages from feeds..."
-    rm -rf ../feeds/packages/net/sing-box
-    rm -rf ../package/feeds/packages/sing-box
-    echo "Done."
-
-    # 克隆 sing-box（homeproxy 的依赖）
-    echo "Installing sing-box from immortalwrt repository..."
-    git clone --depth=1 --single-branch --branch master https://github.com/immortalwrt/packages.git immortalwrt_packages
-    if [ -d "immortalwrt_packages/net/sing-box" ]; then
-        cp -rf immortalwrt_packages/net/sing-box ./
-        echo "sing-box installed successfully."
-    else
-        # 如果上面路径不对，尝试备用源
-        echo "Trying alternative sing-box source..."
-        git clone --depth=1 --single-branch --branch master https://github.com/openwrt/packages.git openwrt_packages
-        if [ -d "openwrt_packages/net/sing-box" ]; then
-            cp -rf openwrt_packages/net/sing-box ./
-            echo "sing-box installed from openwrt packages."
-        else
-            echo "WARNING: sing-box not found in standard feeds, trying xiaorouji source..."
-            # 从 passwall 仓库获取 sing-box
-            git clone --depth=1 --single-branch --branch main https://github.com/xiaorouji/openwrt-passwall-packages.git passwall_packages
-            if [ -d "passwall_packages/sing-box" ]; then
-                cp -rf passwall_packages/sing-box ./
-                echo "sing-box installed from passwall packages."
-            else
-                echo "ERROR: Unable to find sing-box source."
-                exit 1
-            fi
-            rm -rf passwall_packages
-        fi
-        rm -rf openwrt_packages
-    fi
-    rm -rf immortalwrt_packages
-
-    # ---- 安装 homeproxy ----
+    # 注意：不删除 sing-box，因为 feeds 中已有
+    # 直接安装 homeproxy
     UPDATE_PACKAGE "homeproxy" "immortalwrt/homeproxy" "master"
 
     echo "Homeproxy installation completed."
