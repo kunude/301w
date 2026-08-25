@@ -4,7 +4,7 @@
 # 用于添加第三方软件源、修改默认配置等
 #
 
-echo 'src-git immortalwrt_pkg https://github.com/immortalwrt/packages.git' >> feeds.conf.default
+# echo 'src-git immortalwrt_pkg https://github.com/immortalwrt/packages.git' >> feeds.conf.default
 # echo 'src-git immortalwrt_luci https://github.com/immortalwrt/luci.git' >> feeds.conf.default
 
 # 示例：添加第三方软件源
