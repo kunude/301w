@@ -1,11 +1,11 @@
-name: OpenWrt Builder
+name: immortalwrt Builder
 
 on:
   repository_dispatch:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/chasey-dev/immortalwrt-mt798x-rebase
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: 25.12
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/301w1.config
