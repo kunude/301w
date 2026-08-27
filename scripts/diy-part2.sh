@@ -1,18 +1,27 @@
 #!/bin/bash
 #
-# DIY Script Part 2: 在更新 feeds 之后执行
-# 用于修改软件包、打补丁、添加自定义文件等
+# File name: diy-part2.sh
+# Description: OpenWrt DIY script part 2 (After Update feeds)
+#
+# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
 #
 
-# 示例：修改默认时区
-# sed -i 's/UTC/CST-8/g' package/base-files/files/bin/config_generate
-# sed -i 's/shanghai/Asia\/Shanghai/g' package/base-files/files/bin/config_generate
+# Modify default IP
+sed -i 's/192.168.1.1/192.168.35.1/g' package/base-files/files/bin/config_generate
 
-# 示例：添加自定义文件
-# mkdir -p files/etc/config
-# cp $GITHUB_WORKSPACE/custom-config/network files/etc/config/
+# Modify default theme
+# sed -i 's/luci-theme-bootstrap/g' feeds/luci/collections/luci/Makefile
 
-# 301W 专用：确保 bootcmd 设置正确（用于 10G 网口）
-# 注意：这是编译时设置，实际刷机后还需要在 uboot 中设置
+# Modify hostname
+#sed -i 's/OpenWrt/QNAP-301w/g' package/base-files/files/bin/config_generate
 
-exit 0
+# 移除 openwrt feeds 自带的核心库
+rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+
+# 移除 openwrt feeds 过时的luci版本
+rm -rf feeds/luci/applications/luci-app-passwall
+git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
