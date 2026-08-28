@@ -21,4 +21,7 @@ echo "确保 10G Aquantia PHY 支持..."
 
 # git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
 
+echo 'https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_luci/packages.adb' >>./package/system/opkg/files/customfeeds.conf
+echo 'https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_packages/packages.adb' >>./package/system/opkg/files/customfeeds.conf
+
 exit 0
