@@ -29,3 +29,6 @@ sed -i 's/192.168.1.1/192.168.35.1/g' package/base-files/files/bin/config_genera
 # 移除 openwrt feeds 过时的luci版本（已注释）
 # rm -rf feeds/luci/applications/luci-app-passwall
 # git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+# 在 .config 中启用 Passwall
+echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
+echo "CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y" >> .config
