@@ -1,27 +1,27 @@
 #!/bin/bash
 #
-# DIY Script Part 1: 在更新 feeds 之前执行
-# 用于添加第三方软件源、修改默认配置等
+# https://github.com/P3TERX/Actions-OpenWrt
+# File name: diy-part1.sh
+# Description: OpenWrt DIY script part 1 (Before Update feeds)
+#
+# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
 #
 
-# echo 'src-git immortalwrt_pkg https://github.com/immortalwrt/packages.git' >> feeds.conf.default
-# echo 'src-git immortalwrt_luci https://github.com/immortalwrt/luci.git' >> feeds.conf.default
+# Uncomment a feed source
+#sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 
-# 示例：添加第三方软件源
-# echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git;main" >> feeds.conf.default
+# Add a feed source
+#echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
+#echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 
-# 示例：修改默认 IP
-# sed -i 's/192.168.1.1/192.168.35.1/g' package/base-files/files/bin/config_generate
+# ============ 添加 Passwall 预编译软件源 ============
+# 为 QHora-301w (aarch64_cortex-a53) 添加预编译包源
+mkdir -p files/etc/opkg
 
-# 示例：修改默认主机名
-# sed -i 's/ImmortalWrt/QNAP-301W/g' package/base-files/files/bin/config_generate
-
-# 301W 专用：确保 10G PHY 固件正确
-echo "确保 10G Aquantia PHY 支持..."
-
-# git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
-
-echo 'https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_luci/packages.adb' >>./package/system/opkg/files/customfeeds.conf
-echo 'https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_packages/packages.adb' >>./package/system/opkg/files/customfeeds.conf
-
-exit 0
+cat > files/etc/opkg/customfeeds.conf << 'EOF'
+src/gz passwall_luci https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_luci
+src/gz passwall_packages https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_packages
+EOF
