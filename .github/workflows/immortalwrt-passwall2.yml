@@ -9,8 +9,8 @@ env:
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config/passwall2.config
-  DIY_P1_SH: scripts/diy-part3.sh
-  DIY_P2_SH: scripts/diy-part2.sh
+  DIY_P1_SH: scripts/diy-part1.sh
+  DIY_P2_SH: scripts/diy-part3.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
