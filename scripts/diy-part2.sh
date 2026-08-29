@@ -31,18 +31,15 @@ rm -rf feeds/luci/applications/luci-app-passwall
 git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
 
 
-# ===== 修复 sing-box 依赖版本 =====
-SING_BOX_MK="package/passwall-packages/sing-box/Makefile"
-sed -i '/^define Build\/Prepare/,/^endef/d' "$SING_BOX_MK"
-cat >> "$SING_BOX_MK" << 'EOF'
+# diy-part2.sh 末尾追加
 
-define Build/Prepare
-	$(Build/Prepare/Default)
-	( cd $(PKG_BUILD_DIR) && \
-	  go mod edit -replace=github.com/go-json-experiment/json@v0.0.0-20250813024750-ebf49471dced=github.com/go-json-experiment/json@v0.0.0-20250113025959-68c5390da787 && \
-	  go mod download github.com/go-json-experiment/json )
-endef
-EOF
+SING_BOX_MK="package/passwall-packages/sing-box/Makefile"
+
+# 删除可能存在的旧 Build/Prepare 定义
+sed -i '/^define Build\/Prepare/,/^endef/d' "$SING_BOX_MK"
+
+# 追加新的 Build/Prepare，使用 \t 表示制表符
+printf '\n\ndefine Build/Prepare\n\t$(Build/Prepare/Default)\n\t( cd $(PKG_BUILD_DIR) && \\\n\t  sed -i "s|github.com/go-json-experiment/json v0\\.0\\.0-[^ ]*|github.com/go-json-experiment/json v0.0.0-20250113025959-68c5390da787|g" go.mod && \\\n\t  go mod download )\nendef\n' >> "$SING_BOX_MK"
 
 # 在 .config 中启用 Passwall
 echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
