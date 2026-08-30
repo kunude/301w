@@ -186,8 +186,6 @@ jobs:
           VER_V2RAY=$(get_pkg_ver "v2ray-core")
           VER_TROJAN=$(get_pkg_ver "trojan-go")
           VER_SSRUST=$(get_pkg_ver "shadowsocks-libev-ssrust")
-          VER_KUCAT=$(get_pkg_ver "luci-theme-kucat")
-          VER_ARGON=$(get_pkg_ver "luci-theme-argon")
 
           cat > release_notes.txt <<EOF
           ### ImmortalWrt 固件 (Passwall 定制版 - ${{ env.VARIANT }})
