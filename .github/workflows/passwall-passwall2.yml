@@ -1,4 +1,4 @@
-name: immortalwrt-passwall Builder
+name: immortalwrt-passwall-passwall2 Builder
 
 on:
   repository_dispatch:
