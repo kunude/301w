@@ -29,7 +29,7 @@ git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/
 # 移除 openwrt feeds 过时的luci版本（已注释）
 rm -rf feeds/luci/applications/luci-app-passwall
 git clone https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall-luci
-git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+# git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
 
 # 在 .config 中启用 Passwall
 # echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
