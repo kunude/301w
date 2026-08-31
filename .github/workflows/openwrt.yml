@@ -3,7 +3,6 @@ name: Openwrt/Immortalwrt-passwall-passwall2 Builder
 on:
   repository_dispatch:
   workflow_dispatch:
-  # ★ 每日 UTC 0:00 自动检测（北京时间 8:00）
   schedule:
     - cron: '0 0 * * *'
 
@@ -27,14 +26,12 @@ jobs:
         id: fp
         run: |
           NEW_FP=""
-          # 检测两个源的核心仓库
           NEW_FP+=$(git ls-remote https://github.com/openwrt/openwrt refs/heads/main | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/immortalwrt/immortalwrt refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/main | awk '{print $1}')
+          NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/immortalwrt/luci refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/main | awk '{print $1}')
+          NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/immortalwrt/packages refs/heads/master | awk '{print $1}')
-          # Passwall 两个仓库
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall HEAD | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall2 HEAD | awk '{print $1}')
           NEW_FP=$(echo "$NEW_FP" | md5sum | awk '{print $1}')
@@ -101,24 +98,14 @@ jobs:
 
       - name: Load custom feeds
         run: |
-          # ★ 根据源码源动态生成 feeds.conf
-          if [[ "${{ matrix.source }}" == "immortalwrt" ]]; then
-            cat > openwrt/feeds.conf.default <<EOF
-          src-git packages https://github.com/immortalwrt/packages.git;master
-          src-git luci https://github.com/immortalwrt/luci.git;master
-          src-git routing https://github.com/openwrt/routing.git;master
-          src-git telephony https://github.com/openwrt/telephony.git;master
-          src-git video https://github.com/openwrt/video.git;master
-          EOF
-          else
-            cat > openwrt/feeds.conf.default <<EOF
-          src-git packages https://github.com/openwrt/packages.git;master
-          src-git luci https://github.com/openwrt/luci.git;master
-          src-git routing https://github.com/openwrt/routing.git;master
-          src-git telephony https://github.com/openwrt/telephony.git;master
-          src-git video https://github.com/openwrt/video.git;master
-          EOF
-          fi
+          # ★ 所有 feeds 统一使用 master 分支
+          cat > openwrt/feeds.conf.default <<EOF
+        src-git packages https://github.com/openwrt/packages.git;master
+        src-git luci https://github.com/openwrt/luci.git;master
+        src-git routing https://github.com/openwrt/routing.git;master
+        src-git telephony https://github.com/openwrt/telephony.git;master
+        src-git video https://github.com/openwrt/video.git;master
+        EOF
           chmod +x $DIY_P1_SH
           cd openwrt
           $GITHUB_WORKSPACE/$DIY_P1_SH
@@ -146,8 +133,17 @@ jobs:
             echo "CONFIG_VERSION_DIST=\"OpenWrt-Passwall\"" >> .config
           fi
           echo "CONFIG_VERSION_DIST_FEED=\"${{ matrix.variant }}\"" >> .config
-          chmod +x $DIY_P2_SH
-          $GITHUB_WORKSPACE/$DIY_P2_SH
+          cd ..
+          # ★ 检查并执行 diy-part2.sh（在仓库根目录）
+          if [ -f "$DIY_P2_SH" ]; then
+            chmod +x "$DIY_P2_SH"
+            # 执行前需进入 openwrt 目录，因为脚本中的路径是相对的
+            cd openwrt
+            "$GITHUB_WORKSPACE/$DIY_P2_SH"
+            cd ..
+          else
+            echo "⚠️ $DIY_P2_SH 不存在，跳过"
+          fi
 
       - name: Download package
         id: package
