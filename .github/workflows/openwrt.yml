@@ -8,7 +8,7 @@ on:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: master
+  REPO_BRANCH: main
   FEEDS_CONF: feeds.conf.default
   DIY_P1_SH: scripts/diy-part1.sh
   DIY_P2_SH: scripts/diy-part2.sh
@@ -29,8 +29,8 @@ jobs:
         run: |
           NEW_FP=""
           NEW_FP+=$(git ls-remote $REPO_URL refs/heads/$REPO_BRANCH | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/luci refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/packages refs/heads/master | awk '{print $1}')
+          NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/master | awk '{print $1}')
+          NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall HEAD | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall2 HEAD | awk '{print $1}')
           NEW_FP=$(echo "$NEW_FP" | md5sum | awk '{print $1}')
@@ -211,9 +211,9 @@ jobs:
           VER_SSRUST=$(get_pkg_ver "shadowsocks-libev-ssrust")
 
           cat > release_notes.txt <<EOF
-          ### ImmortalWrt 固件 (Passwall 定制版 - ${VARIANT_NAME})
+          ### Openwrt 固件 (Passwall 定制版 - ${VARIANT_NAME})
           **编译时间**: $(date +"%Y-%m-%d %H:%M:%S")
-          **系统版本**: ImmortalWrt $SYSTEM_VER (分支 $REPO_BRANCH)
+          **系统版本**: Openwrt $SYSTEM_VER (分支 $REPO_BRANCH)
           **Linux 内核**: $KERNEL_VER
           **目标设备**: ${{ env.DEVICE_NAME }}
           **固件变体**: ${VARIANT_NAME}
@@ -225,20 +225,12 @@ jobs:
           - **luci-app-passwall2**: $VER_PASSWALL2
           - **xray-core**: $VER_XRAY
           - **v2ray-core**: $VER_V2RAY
-          - **trojan-go**: $VER_TROJAN
-          - **shadowsocks-libev-ssrust**: $VER_SSRUST
-          ---
-          ### ⚠️ 刷机须知
-          1. **默认 IP**: 请查看您设备的默认配置（通常为 192.168.1.1）
-          2. **默认密码**: 无 (留空)
-          3. **Wi-Fi**: 刷机后请在后台设置
-          4. **包管理器**: 此版本使用 apk，不再支持 opkg
           ---
           ### 内置插件清单
           $PLUGINS
           ---
           ### 特性说明
-          - ✅ 基于 ImmortalWrt master 分支，持续更新
+          - ✅ 基于 Openwrt Main 分支，持续更新
           - ✅ 集成 ${VARIANT_NAME} 及相关依赖
           - ✅ 支持 IPv6
           - ✅ 使用 apk 包管理器
