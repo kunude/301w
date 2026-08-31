@@ -128,6 +128,9 @@ jobs:
         run: |
           cd openwrt
           echo "=== 编译开始，使用 $(nproc) 线程 ==="
+          # ★ 无论编译成功与否，先设置 VARIANT
+          echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
+
           # 尝试多线程，失败则单线程并输出完整日志
           if make -j$(nproc) V=s 2>&1 | tee compile.log; then
             echo "✅ 编译成功"
@@ -140,17 +143,14 @@ jobs:
               echo "完整日志已保存为 compile.log"
               exit 1
             }
-            # 如果单线程成功，则视为成功
             echo "✅ 单线程编译成功"
             echo "status=success" >> $GITHUB_OUTPUT
           fi
-          # 提取设备名、日期等（仅在成功时执行）
-          if [ "${{ steps.compile.outputs.status }}" = "success" ]; then
-            DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | sort -u | tr '\n' '_' | sed 's/_$//')"
-            [ -n "$DEVICE_NAME" ] && echo "DEVICE_NAME=_${DEVICE_NAME}" >> $GITHUB_ENV
-            echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-            echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
-          fi
+
+          # 提取设备名、日期等
+          DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | sort -u | tr '\n' '_' | sed 's/_$//')"
+          [ -n "$DEVICE_NAME" ] && echo "DEVICE_NAME=_${DEVICE_NAME}" >> $GITHUB_ENV
+          echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
       - name: Upload compile log on failure
         if: failure() && steps.compile.outputs.status != 'success'
@@ -164,16 +164,21 @@ jobs:
         if: steps.compile.outputs.status == 'success'
         run: |
           cd openwrt
+          # ★ 验证必要变量是否存在
+          VARIANT_NAME="${{ env.VARIANT }}"
+          if [ -z "$VARIANT_NAME" ]; then
+            VARIANT_NAME="${{ matrix.variant }}"
+            echo "VARIANT=${VARIANT_NAME}" >> $GITHUB_ENV
+          fi
           FP="${{ needs.check.outputs.fp }}"
-          KERNEL_VER=$(grep -rh "^LINUX_VERSION" include/kernel-* 2>/dev/null | head -1 | awk -F'=' '{print $2}' | tr -d ' ')
+          KERNEL_VER=$(grep -rh "^LINUX_VERSION" include/kernel-* 2>/dev/null | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
           [ -z "$KERNEL_VER" ] && KERNEL_VER="6.x"
-          RAW_VER=$(cat version.date 2>/dev/null)
+          RAW_VER=$(cat version.date 2>/dev/null || true)
           if echo "$RAW_VER" | grep -qE '^[0-9]{9,}$'; then
             SYSTEM_VER=$(date -d "@$RAW_VER" +"%Y-%m-%d" 2>/dev/null || echo "master")
           else
             SYSTEM_VER="${RAW_VER:-master}"
           fi
-          # ★ 修复：grep 无匹配时返回 1 会导致脚本退出，添加 || true
           PLUGINS=$(grep "CONFIG_PACKAGE_luci-app-" .config | grep "=y" | grep -v "rclone" | sed 's/CONFIG_PACKAGE_//g;s/=y//g' | sort | sed 's/^/- /' || true)
           THEMES=$(grep "CONFIG_PACKAGE_luci-theme-" .config | grep "=y" | sed 's/CONFIG_PACKAGE_//;s/=y//g' | sort | sed 's/^/- /' || true)
 
@@ -206,12 +211,12 @@ jobs:
           VER_SSRUST=$(get_pkg_ver "shadowsocks-libev-ssrust")
 
           cat > release_notes.txt <<EOF
-          ### ImmortalWrt 固件 (Passwall 定制版 - ${{ env.VARIANT }})
+          ### ImmortalWrt 固件 (Passwall 定制版 - ${VARIANT_NAME})
           **编译时间**: $(date +"%Y-%m-%d %H:%M:%S")
           **系统版本**: ImmortalWrt $SYSTEM_VER (分支 $REPO_BRANCH)
           **Linux 内核**: $KERNEL_VER
           **目标设备**: ${{ env.DEVICE_NAME }}
-          **固件变体**: ${{ env.VARIANT }}
+          **固件变体**: ${VARIANT_NAME}
           **固件格式**: 由设备配置决定 (bin, img, itb 等)
           **包管理器**: apk (Alpine Package Keeper)
           ---
@@ -234,7 +239,7 @@ jobs:
           ---
           ### 特性说明
           - ✅ 基于 ImmortalWrt master 分支，持续更新
-          - ✅ 集成 ${{ env.VARIANT }} 及相关依赖
+          - ✅ 集成 ${VARIANT_NAME} 及相关依赖
           - ✅ 支持 IPv6
           - ✅ 使用 apk 包管理器
           <!-- FP: $FP -->
@@ -274,7 +279,12 @@ jobs:
         id: tag
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         run: |
-          echo "release_tag=${{ env.VARIANT }}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+          # ★ 如果 VARIANT 为空，使用 matrix.variant 作为后备
+          VARIANT_NAME="${{ env.VARIANT }}"
+          if [ -z "$VARIANT_NAME" ]; then
+            VARIANT_NAME="${{ matrix.variant }}"
+          fi
+          echo "release_tag=${VARIANT_NAME}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware to release
