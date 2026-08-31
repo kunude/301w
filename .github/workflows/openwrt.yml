@@ -1,4 +1,4 @@
-name: Openwrt/Immortalwrt-passwall-passwall2 Builder
+name: Openwrt-Immortalwrt-passwall-passwall2 Builder
 
 on:
   repository_dispatch:
