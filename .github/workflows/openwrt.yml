@@ -1,4 +1,4 @@
-name: Openwrt-Immortalwrt-passwall-passwall2 Builder
+name: OpenWrt-ImmortalWrt-Passwall-Builder
 
 on:
   repository_dispatch:
@@ -98,7 +98,7 @@ jobs:
 
       - name: Load custom feeds
         run: |
-          # ★ 所有 feeds 统一使用 master 分支
+          # ★ 所有 feeds 统一使用 master 分支（OpenWrt 和 ImmortalWrt 均适用）
           cat > openwrt/feeds.conf.default <<EOF
         src-git packages https://github.com/openwrt/packages.git;master
         src-git luci https://github.com/openwrt/luci.git;master
@@ -134,10 +134,9 @@ jobs:
           fi
           echo "CONFIG_VERSION_DIST_FEED=\"${{ matrix.variant }}\"" >> .config
           cd ..
-          # ★ 检查并执行 diy-part2.sh（在仓库根目录）
+          # ★ 检查并执行 diy-part2.sh（脚本中的路径是相对于 openwrt/ 的）
           if [ -f "$DIY_P2_SH" ]; then
             chmod +x "$DIY_P2_SH"
-            # 执行前需进入 openwrt 目录，因为脚本中的路径是相对的
             cd openwrt
             "$GITHUB_WORKSPACE/$DIY_P2_SH"
             cd ..
