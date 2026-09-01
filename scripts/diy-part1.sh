@@ -4,6 +4,13 @@ rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2sock
 # 移除 feeds 中的旧版 luci-app-passwall（如有）
 rm -rf feeds/luci/applications/luci-app-passwall
 
+# 移除 OpenWrt 的 haproxy
+rm -rf feeds/packages/net/haproxy
+# 从 ImmortalWrt 的 25.12 分支克隆 haproxy
+git clone --depth=1 -b openwrt-25.12 https://github.com/immortalwrt/packages.git tmp-packages
+cp -r tmp-packages/net/haproxy feeds/packages/net/
+rm -rf tmp-packages
+
 # 根据环境变量决定克隆哪个仓库（或全部克隆，由配置决定）
 # 推荐全部克隆，由 .config 决定启用哪个，这样两个变体无需修改脚本。
 git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall package/openwrt-passwall
