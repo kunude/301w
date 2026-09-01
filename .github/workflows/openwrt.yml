@@ -120,8 +120,9 @@ jobs:
             echo "❌ 配置文件 $CONFIG_FILE 不存在，请创建！"
             exit 1
           fi
-          cd openwrt
+          # ★ 先加权限，再 cd 进入 openwrt
           chmod +x $DIY_P2_SH
+          cd openwrt
           $GITHUB_WORKSPACE/$DIY_P2_SH
 
       - name: Download package
@@ -133,19 +134,7 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
-      # ★ 清理并重新构建 host tools（解决 OpenWrt 工具链问题）
-      - name: Clean and rebuild host tools
-        run: |
-          cd openwrt
-          echo "=== 清理 host 工具 ==="
-          rm -rf staging_dir/host
-          echo "=== 重新构建 host 工具 ==="
-          make -j1 tools/install V=s 2>&1 | tee tools.log || {
-            echo "❌ Host 工具构建失败，查看日志尾部："
-            tail -100 tools.log
-            exit 1
-          }
-          echo "✅ Host 工具构建成功"
+      # ★★★ 移除 Clean and rebuild host tools（与独立工作流一致）★★★
 
       - name: Compile the firmware
         id: compile
@@ -155,24 +144,21 @@ jobs:
           echo "SOURCE=${{ matrix.source }}" >> $GITHUB_ENV
           echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
 
-          set -o pipefail
-          make -j$(nproc) V=s 2>&1 | tee compile.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+          # ★ 与独立工作流一致的编译方式
+          if make -j$(nproc) V=s 2>&1 | tee compile.log; then
+            echo "✅ 编译成功"
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
             echo "❌ 多线程编译失败，尝试单线程详细模式..."
-            make -j1 V=s 2>&1 | tee -a compile.log
-            if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            make -j1 V=s 2>&1 | tee -a compile.log || {
               echo "❌ 单线程编译也失败，查看日志尾部："
               tail -100 compile.log
               echo "完整日志已保存为 compile.log"
               exit 1
-            fi
+            }
             echo "✅ 单线程编译成功"
-          else
-            echo "✅ 编译成功"
+            echo "status=success" >> $GITHUB_OUTPUT
           fi
-          set +o pipefail
-
-          echo "status=success" >> $GITHUB_OUTPUT
 
           DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | sort -u | tr '\n' '_' | sed 's/_$//')"
           [ -n "$DEVICE_NAME" ] && echo "DEVICE_NAME=_${DEVICE_NAME}" >> $GITHUB_ENV
@@ -184,13 +170,6 @@ jobs:
         with:
           name: compile-log-${{ matrix.source }}-${{ matrix.variant }}-${{ github.run_id }}
           path: openwrt/compile.log
-
-      - name: Upload tools log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tools-log-${{ matrix.source }}-${{ matrix.variant }}-${{ github.run_id }}
-          path: openwrt/tools.log
 
       - name: Generate release notes
         id: notes
