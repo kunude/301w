@@ -7,7 +7,6 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  FEEDS_CONF: feeds.conf.default
   DIY_P1_SH: scripts/diy-part1.sh
   DIY_P2_SH: scripts/diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -98,14 +97,7 @@ jobs:
 
       - name: Load custom feeds
         run: |
-          # 所有 feeds 统一使用 master 分支
-          cat > openwrt/feeds.conf.default <<'EOF'
-          src-git packages https://github.com/openwrt/packages.git;master
-          src-git luci https://github.com/openwrt/luci.git;master
-          src-git routing https://github.com/openwrt/routing.git;master
-          src-git telephony https://github.com/openwrt/telephony.git;master
-          src-git video https://github.com/openwrt/video.git;master
-          EOF
+          # ★ 不覆盖 feeds.conf.default，使用源码自带的配置
           chmod +x $DIY_P1_SH
           cd openwrt
           $GITHUB_WORKSPACE/$DIY_P1_SH
