@@ -16,4 +16,4 @@ git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall2 packag
 # cat > files/etc/opkg/customfeeds.conf << 'EOF'
 # src/gz passwall_luci https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_luci
 # src/gz passwall_packages https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/aarch64_cortex-a53/passwall_packages
-EOF
+# EOF
