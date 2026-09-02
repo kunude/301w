@@ -1,4 +1,4 @@
-name: OpenWrt-ImmortalWrt-Passwall-Builder
+name: OpenWrt-Passwall-Builder
 
 on:
   repository_dispatch:
@@ -14,6 +14,9 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  SOURCE_TYPE: openwrt
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: main
 
 jobs:
   check:
@@ -27,11 +30,8 @@ jobs:
         run: |
           NEW_FP=""
           NEW_FP+=$(git ls-remote https://github.com/openwrt/openwrt refs/heads/main | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/immortalwrt refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/luci refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/packages refs/heads/master | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall HEAD | awk '{print $1}')
           NEW_FP+=$(git ls-remote https://github.com/Openwrt-Passwall/openwrt-passwall2 HEAD | awk '{print $1}')
           NEW_FP=$(echo "$NEW_FP" | md5sum | awk '{print $1}')
@@ -60,15 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [openwrt, immortalwrt]
         variant: [passwall, passwall2]
-        include:
-          - source: openwrt
-            repo_url: https://github.com/openwrt/openwrt
-            repo_branch: main
-          - source: immortalwrt
-            repo_url: https://github.com/immortalwrt/immortalwrt
-            repo_branch: master
 
     steps:
       - name: Checkout
@@ -93,12 +85,11 @@ jobs:
         working-directory: /workdir
         run: |
           df -hT $PWD
-          git clone ${{ matrix.repo_url }} -b ${{ matrix.repo_branch }} openwrt
+          git clone ${{ env.REPO_URL }} -b ${{ env.REPO_BRANCH }} openwrt
           ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
       - name: Load custom feeds
         run: |
-          # ★ 与独立工作流完全一致：不覆盖 feeds.conf.default
           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
           chmod +x $DIY_P1_SH
           cd openwrt
@@ -120,7 +111,6 @@ jobs:
             echo "❌ 配置文件 $CONFIG_FILE 不存在，请创建！"
             exit 1
           fi
-          # ★ 先加权限，再 cd 进入 openwrt
           chmod +x $DIY_P2_SH
           cd openwrt
           $GITHUB_WORKSPACE/$DIY_P2_SH
@@ -134,17 +124,14 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
-      # ★★★ 移除 Clean and rebuild host tools（与独立工作流一致）★★★
-
       - name: Compile the firmware
         id: compile
         run: |
           cd openwrt
           echo "=== 编译开始，使用 $(nproc) 线程 ==="
-          echo "SOURCE=${{ matrix.source }}" >> $GITHUB_ENV
+          echo "SOURCE=${{ env.SOURCE_TYPE }}" >> $GITHUB_ENV
           echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
 
-          # ★ 与独立工作流一致的编译方式
           if make -j$(nproc) V=s 2>&1 | tee compile.log; then
             echo "✅ 编译成功"
             echo "status=success" >> $GITHUB_OUTPUT
@@ -168,7 +155,7 @@ jobs:
         if: failure() && steps.compile.outputs.status != 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: compile-log-${{ matrix.source }}-${{ matrix.variant }}-${{ github.run_id }}
+          name: compile-log-openwrt-${{ matrix.variant }}-${{ github.run_id }}
           path: openwrt/compile.log
 
       - name: Generate release notes
@@ -176,11 +163,7 @@ jobs:
         if: steps.compile.outputs.status == 'success'
         run: |
           cd openwrt
-          if [[ "${{ matrix.source }}" == "immortalwrt" ]]; then
-            SOURCE_NAME="ImmortalWrt"
-          else
-            SOURCE_NAME="OpenWrt"
-          fi
+          SOURCE_NAME="OpenWrt"
           VARIANT_NAME="${{ matrix.variant }}"
           FP="${{ needs.check.outputs.fp }}"
           KERNEL_VER=$(grep -rh "^LINUX_VERSION" include/kernel-* 2>/dev/null | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
@@ -223,7 +206,7 @@ jobs:
           cat > release_notes.txt <<EOF
           ### ${SOURCE_NAME} 固件 (Passwall 定制版 - ${VARIANT_NAME})
           **编译时间**: $(date +"%Y-%m-%d %H:%M:%S")
-          **系统版本**: ${SOURCE_NAME} $SYSTEM_VER (分支 ${{ matrix.repo_branch }})
+          **系统版本**: ${SOURCE_NAME} $SYSTEM_VER (分支 ${{ env.REPO_BRANCH }})
           **Linux 内核**: $KERNEL_VER
           **目标设备**: ${{ env.DEVICE_NAME }}
           **固件变体**: ${VARIANT_NAME}
@@ -240,7 +223,7 @@ jobs:
           $PLUGINS
           ---
           ### 特性说明
-          - ✅ 基于 ${SOURCE_NAME} ${{ matrix.repo_branch }} 分支，持续更新
+          - ✅ 基于 ${SOURCE_NAME} ${{ env.REPO_BRANCH }} 分支，持续更新
           - ✅ 集成 ${VARIANT_NAME} 及相关依赖
           - ✅ 支持 IPv6
           - ✅ 使用 apk 包管理器
@@ -256,7 +239,7 @@ jobs:
         uses: actions/upload-artifact@main
         if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
         with:
-          name: OpenWrt_bin_${{ matrix.source }}-${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          name: OpenWrt_bin_${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: openwrt/bin
 
       - name: Organize files
@@ -274,16 +257,15 @@ jobs:
         uses: actions/upload-artifact@main
         if: steps.organize.outputs.status == 'success' && !cancelled()
         with:
-          name: OpenWrt_firmware_${{ matrix.source }}-${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          name: OpenWrt_firmware_${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
 
       - name: Generate release tag
         id: tag
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         run: |
-          SOURCE_PREFIX="${{ matrix.source }}"
           VARIANT_NAME="${{ matrix.variant }}"
-          echo "release_tag=${SOURCE_PREFIX}-${VARIANT_NAME}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+          echo "release_tag=openwrt-${VARIANT_NAME}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware to release
@@ -305,21 +287,19 @@ jobs:
           retain_days: 0
           keep_minimum_runs: 2
 
-      - name: Remove old Releases (per source+variant)
+      - name: Remove old Releases (OpenWrt)
         uses: actions/github-script@v9
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SOURCE: ${{ matrix.source }}
           VARIANT: ${{ matrix.variant }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const source = process.env.SOURCE;
             const variant = process.env.VARIANT;
             const keepLatest = 3;
             const deleteTags = true;
-            const prefix = `${source}-${variant}-`;
+            const prefix = `openwrt-${variant}-`;
 
             const releases = await github.paginate(github.rest.repos.listReleases, {
               owner: context.repo.owner,
