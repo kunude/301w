@@ -24,6 +24,7 @@ fi
 rm -rf package/openwrt-passwall package/openwrt-passwall2
 git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall package/openwrt-passwall
 git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/openwrt-passwall2
+#  git clone https://github.com/kenzok8/small
 
 # ==================== 5. （可选）添加预编译 IPK 源 ====================
 # 若希望最终固件支持在线安装缺失的 IPK，可启用此部分
