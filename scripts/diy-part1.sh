@@ -7,17 +7,17 @@
 # ==================== 2. 添加 PassWall 依赖包 Feed ====================
 # 从第三方仓库获取缺失的依赖包（chinadns-ng, dns2socks, tcping, geoview 等）
 if ! grep -q "passwall_packages" feeds.conf.default; then
-    echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git" >> feeds.conf.default
+    echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git" >> feeds.conf.default
     ./scripts/feeds update -a
     ./scripts/feeds install -a
 fi
 
 # ==================== 3. 替换 haproxy（从 ImmortalWrt 获取） ====================
 # 先移除旧版，再克隆新版
-rm -rf feeds/packages/net/haproxy
-git clone --depth=1 -b openwrt-25.12 https://github.com/immortalwrt/packages.git tmp-packages
-cp -r tmp-packages/net/haproxy feeds/packages/net/
-rm -rf tmp-packages
+# rm -rf feeds/packages/net/haproxy
+# git clone --depth=1 -b openwrt-25.12 https://github.com/immortalwrt/packages.git tmp-packages
+# cp -r tmp-packages/net/haproxy feeds/packages/net/
+# rm -rf tmp-packages
 
 # ==================== 4. 克隆 PassWall 主程序 ====================
 # （已存在的 package/ 目录下，如果已有则先删除）
