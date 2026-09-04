@@ -306,18 +306,19 @@ jobs:
           retain_days: 0
           keep_minimum_runs: 2
 
-      - name: Remove old Releases (per variant)
+      - name: Remove old Releases (ImmortalWrt)
         uses: actions/github-script@v9
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VARIANT: ${{ env.VARIANT }}
+          VARIANT: ${{ matrix.variant }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const variant = process.env.VARIANT;
             const keepLatest = 3;
             const deleteTags = true;
+            const prefix = `immortalwrt-${variant}-`;
 
             const releases = await github.paginate(github.rest.repos.listReleases, {
               owner: context.repo.owner,
@@ -325,11 +326,12 @@ jobs:
               per_page: 100
             });
 
-            const variantReleases = releases.filter(r => r.tag_name.startsWith(variant + '-'));
-            variantReleases.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            core.info(`Total releases for ${variant}: ${variantReleases.length}`);
+            const matchingReleases = releases.filter(r => r.tag_name.startsWith(prefix));
+            matchingReleases.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            const toDelete = variantReleases.slice(keepLatest);
+            core.info(`Total releases for ${prefix}: ${matchingReleases.length}`);
+
+            const toDelete = matchingReleases.slice(keepLatest);
             for (const rel of toDelete) {
               core.info(`Deleting release '${rel.tag_name}' (created ${rel.created_at})`);
               await github.rest.repos.deleteRelease({
@@ -337,17 +339,13 @@ jobs:
                 repo: context.repo.repo,
                 release_id: rel.id
               });
-              if (deleteTags && rel.tag_name) {
-                try {
-                  await github.rest.git.deleteRef({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    ref: `tags/${rel.tag_name}`
-                  });
-                  core.info(`  -> deleted tag ${rel.tag_name}`);
-                } catch (err) {
-                  core.info(`  -> tag ${rel.tag_name} not deleted: ${err.message}`);
-                }
+              if (deleteTags) {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${rel.tag_name}`
+                }).catch(err => {
+                  core.warning(`Failed to delete tag ${rel.tag_name}: ${err.message}`);
+                });
               }
             }
-            core.info(`Kept ${Math.min(keepLatest, variantReleases.length)} release(s) for ${variant}.`);
