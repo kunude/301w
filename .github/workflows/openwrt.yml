@@ -8,7 +8,7 @@ on:
 
 env:
   FEEDS_CONF: feeds.conf.default
-  DIY_P1_SH: scripts/diy-part3sh
+  DIY_P1_SH: scripts/diy-part3.sh
   DIY_P2_SH: scripts/diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
