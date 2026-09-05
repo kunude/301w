@@ -130,15 +130,16 @@ jobs:
         run: |
           cd openwrt
           echo "=== 编译开始，使用 $(nproc) 线程 ==="
-          echo "SOURCE=${{ env.SOURCE_TYPE }}" >> $GITHUB_ENV
+          # ★ 设置变体名称供后续步骤使用
           echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
 
-          set -o pipefail   # 关键：使管道返回第一个失败命令的退出码
-          if make -j$(nproc) V=s 2>&1 | tee compile.log; then
-            echo "✅ 编译成功"
+          # 第一次尝试：多线程，不输出 V=s（仅保留错误输出）
+          if make -j$(nproc) 2>&1 | tee compile.log; then
+            echo "✅ 多线程编译成功"
             echo "status=success" >> $GITHUB_OUTPUT
           else
-            echo "❌ 多线程编译失败，尝试单线程详细模式..."
+            echo "❌ 多线程编译失败，尝试单线程详细模式（V=s）..."
+            # 第二次尝试：单线程 + V=s，追加到日志
             if make -j1 V=s 2>&1 | tee -a compile.log; then
               echo "✅ 单线程编译成功"
               echo "status=success" >> $GITHUB_OUTPUT
@@ -146,7 +147,7 @@ jobs:
               echo "❌ 单线程编译也失败，查看日志尾部："
               tail -100 compile.log
               echo "完整日志已保存为 compile.log"
-              exit 1
+              exit 1   # 使步骤失败，防止后续误上传
             fi
           fi
 
