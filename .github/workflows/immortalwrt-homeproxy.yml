@@ -1,4 +1,4 @@
-name: immortalwrt-homeproxy-test Builder
+name: immortalwrt-homeproxy Builder
 
 on:
   repository_dispatch:
