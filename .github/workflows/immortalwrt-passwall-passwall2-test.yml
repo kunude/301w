@@ -205,10 +205,7 @@ jobs:
 
           VER_PASSWALL=$(get_pkg_ver "luci-app-passwall")
           VER_PASSWALL2=$(get_pkg_ver "luci-app-passwall2")
-          VER_XRAY=$(get_pkg_ver "xray-core")
-          VER_V2RAY=$(get_pkg_ver "v2ray-core")
-          VER_TROJAN=$(get_pkg_ver "trojan-go")
-          VER_SSRUST=$(get_pkg_ver "shadowsocks-libev-ssrust")
+          VER_SINGBOX=$(get_pkg_ver "sing-box")
 
           cat > release_notes.txt <<EOF
           ### ImmortalWrt 固件 (Passwall 定制版 - ${VARIANT_NAME})
@@ -223,10 +220,7 @@ jobs:
           ### 🔰 Passwall 核心组件版本
           - **luci-app-passwall**: $VER_PASSWALL
           - **luci-app-passwall2**: $VER_PASSWALL2
-          - **xray-core**: $VER_XRAY
-          - **v2ray-core**: $VER_V2RAY
-          - **trojan-go**: $VER_TROJAN
-          - **shadowsocks-libev-ssrust**: $VER_SSRUST
+          - **sing-box**: $VER_SINGBOX
           ---
           ### ⚠️ 刷机须知
           1. **默认 IP**: 请查看您设备的默认配置（通常为 192.168.1.1）
