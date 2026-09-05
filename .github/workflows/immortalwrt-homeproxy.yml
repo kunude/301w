@@ -70,6 +70,14 @@ jobs:
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
+    - name: Replace homeproxy feed with kenzok8/small
+      if: steps.check_update.outputs.skip != 'true'
+      run: |
+        cd openwrt
+        sed -i 's|^src-git homeproxy.*|src-git small https://github.com/kenzok8/small|' feeds.conf.default
+        # 若原文件无 homeproxy 行，则追加
+        grep -q '^src-git small' feeds.conf.default || echo "src-git small https://github.com/kenzok8/small" >> feeds.conf.default
+
     - name: Load custom feeds
       if: steps.check_update.outputs.skip != 'true'
       run: |
