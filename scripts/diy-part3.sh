@@ -28,3 +28,34 @@ rm -rf package/openwrt-passwall package/openwrt-passwall
 
 # ==================== 6. （可选）其他自定义设置 ====================
 # 例如修改默认 IP 等，可在此添加
+# ==================== 7. 移除不需要的代理组件（clashoo / mihomo） ====================
+# 从 feeds/small 中直接删除这些包的源码，让构建系统彻底找不到它们
+echo "移除 feeds/small 中的 clashoo, mihomo, luci-app-clashoo ..."
+rm -rf feeds/small/clashoo
+rm -rf feeds/small/mihomo
+rm -rf feeds/small/luci-app-clashoo
+
+# ==================== 8. 强制 Passwall2 只使用 Sing-box 核心 ====================
+# 先确保 .config 存在（它在上一步已被复制到 openwrt/.config）
+CONFIG_FILE="openwrt/.config"
+
+# 取消所有核心选项（避免残留）
+sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray is not set/' "$CONFIG_FILE"
+sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All is not set/' "$CONFIG_FILE"
+
+# 启用 Sing-box 核心（如果之前被注释，则取消注释；否则追加）
+if grep -q "^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set" "$CONFIG_FILE"; then
+    sed -i 's/^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set/CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y/' "$CONFIG_FILE"
+elif ! grep -q "^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" "$CONFIG_FILE"; then
+    echo "CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" >> "$CONFIG_FILE"
+fi
+
+# 同时确保 Xray 相关包不被自动拉起（Sing-box 不需要 Xray）
+sed -i 's/^CONFIG_PACKAGE_xray-core=.*/# CONFIG_PACKAGE_xray-core is not set/' "$CONFIG_FILE"
+sed -i 's/^CONFIG_PACKAGE_xray-plugin=.*/# CONFIG_PACKAGE_xray-plugin is not set/' "$CONFIG_FILE"
+
+# ==================== 9. （可选）删除其他不需要的 LuCI 应用 ====================
+# 如果您也不想编译 luci-app-ssr-plus 或 luci-app-passwall (v1)，可以一并删除：
+# rm -rf feeds/small/luci-app-ssr-plus
+# rm -rf feeds/luci/applications/luci-app-passwall   # 注意：immortalwrt 的 luci feed 中也有 passwall
+# 但不建议删除 luci-app-passwall 如果它被其他包依赖，且您只用 passwall2 则无妨。
