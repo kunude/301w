@@ -124,6 +124,7 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
+      # ===== 修改点：加入 set -o pipefail 以正确捕获 make 错误 =====
       - name: Compile the firmware
         id: compile
         run: |
@@ -132,19 +133,21 @@ jobs:
           echo "SOURCE=${{ env.SOURCE_TYPE }}" >> $GITHUB_ENV
           echo "VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
 
+          set -o pipefail   # 关键：使管道返回第一个失败命令的退出码
           if make -j$(nproc) V=s 2>&1 | tee compile.log; then
             echo "✅ 编译成功"
             echo "status=success" >> $GITHUB_OUTPUT
           else
             echo "❌ 多线程编译失败，尝试单线程详细模式..."
-            make -j1 V=s 2>&1 | tee -a compile.log || {
+            if make -j1 V=s 2>&1 | tee -a compile.log; then
+              echo "✅ 单线程编译成功"
+              echo "status=success" >> $GITHUB_OUTPUT
+            else
               echo "❌ 单线程编译也失败，查看日志尾部："
               tail -100 compile.log
               echo "完整日志已保存为 compile.log"
               exit 1
-            }
-            echo "✅ 单线程编译成功"
-            echo "status=success" >> $GITHUB_OUTPUT
+            fi
           fi
 
           DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | sort -u | tr '\n' '_' | sed 's/_$//')"
