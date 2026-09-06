@@ -20,7 +20,7 @@ rm -rf package/feeds/luci/luci-app-passwall
 rm -rf package/luci-app-passwall package/luci-app-passwall
 
 # ==================== 4. 删除官方 packages feed 中可能冲突的依赖（确保使用 small 里的最新版） ====================
-rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,sing*,homepr*,Tcping,smartdns}
+rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,sing*,homepr*,tcping,smartdns}
 
 # ==================== 5. 清理残留的旧克隆目录（如果有） ====================
 # 之前可能手动克隆过 openwrt-passwall，现在不再需要，确保删除
