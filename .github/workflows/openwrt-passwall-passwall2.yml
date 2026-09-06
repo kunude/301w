@@ -2,6 +2,7 @@ name: OpenWrt-Passwall-Passwall2-Builder
 
 on:
   repository_dispatch:
+    types: [trigger-build]  # 建议明确触发类型，如不需要可留空
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
@@ -64,7 +65,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4  # 修正：v7 不存在，改为 v4
 
       - name: Initialization environment
         env:
@@ -124,10 +125,11 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
-      # ===== 修改点：加入 set -o pipefail 以正确捕获 make 错误 =====
+      # ===== 修正点：加入 set -o pipefail 以正确捕获 make 错误 =====
       - name: Compile the firmware
         id: compile
         run: |
+          set -o pipefail  # 关键修正：确保管道中 make 的返回值能被 if 正确捕获
           cd openwrt
           echo "=== 编译开始，使用 $(nproc) 线程 ==="
           # ★ 设置变体名称供后续步骤使用
@@ -157,7 +159,7 @@ jobs:
 
       - name: Upload compile log on failure
         if: failure() && steps.compile.outputs.status != 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4  # 修正：@main 不稳定，改为 v4
         with:
           name: compile-log-openwrt-${{ matrix.variant }}-${{ github.run_id }}
           path: openwrt/compile.log
@@ -240,7 +242,7 @@ jobs:
         run: df -hT
 
       - name: Upload bin directory
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4  # 修正：@main 不稳定，改为 v4
         if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
         with:
           name: OpenWrt_bin_${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -258,7 +260,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware directory
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4  # 修正：@main 不稳定，改为 v4
         if: steps.organize.outputs.status == 'success' && !cancelled()
         with:
           name: OpenWrt_firmware_${{ matrix.variant }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -273,7 +275,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware to release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2  # 修正：v3 不存在，改为 v2
         if: steps.tag.outputs.status == 'success' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -284,6 +286,7 @@ jobs:
 
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
+        if: always()  # 建议：无论编译成败都清理旧记录，避免堆积
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TRIGGER_PAT }}
         with:
@@ -292,7 +295,7 @@ jobs:
           keep_minimum_runs: 2
 
       - name: Remove old Releases (OpenWrt)
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7  # 修正：v9 不存在，改为 v7
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
