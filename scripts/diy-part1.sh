@@ -37,22 +37,22 @@ rm -rf feeds/small/luci-app-clashoo
 
 # ==================== 8. 强制 Passwall2 只使用 Sing-box 核心 ====================
 # 先确保 .config 存在（它在上一步已被复制到 openwrt/.config）
-CONFIG_FILE="openwrt/.config"
+# CONFIG_FILE="openwrt/.config"
 
 # 取消所有核心选项（避免残留）
-sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray is not set/' "$CONFIG_FILE"
-sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All is not set/' "$CONFIG_FILE"
+# sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_Xray is not set/' "$CONFIG_FILE"
+# sed -i 's/^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=.*/# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All is not set/' "$CONFIG_FILE"
 
 # 启用 Sing-box 核心（如果之前被注释，则取消注释；否则追加）
-if grep -q "^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set" "$CONFIG_FILE"; then
-    sed -i 's/^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set/CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y/' "$CONFIG_FILE"
-elif ! grep -q "^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" "$CONFIG_FILE"; then
-    echo "CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" >> "$CONFIG_FILE"
-fi
+# if grep -q "^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set" "$CONFIG_FILE"; then
+#     sed -i 's/^# CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox is not set/CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y/' "$CONFIG_FILE"
+# elif ! grep -q "^CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" "$CONFIG_FILE"; then
+#     echo "CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y" >> "$CONFIG_FILE"
+# fi
 
 # 同时确保 Xray 相关包不被自动拉起（Sing-box 不需要 Xray）
-sed -i 's/^CONFIG_PACKAGE_xray-core=.*/# CONFIG_PACKAGE_xray-core is not set/' "$CONFIG_FILE"
-sed -i 's/^CONFIG_PACKAGE_xray-plugin=.*/# CONFIG_PACKAGE_xray-plugin is not set/' "$CONFIG_FILE"
+# sed -i 's/^CONFIG_PACKAGE_xray-core=.*/# CONFIG_PACKAGE_xray-core is not set/' "$CONFIG_FILE"
+# sed -i 's/^CONFIG_PACKAGE_xray-plugin=.*/# CONFIG_PACKAGE_xray-plugin is not set/' "$CONFIG_FILE"
 
 # ==================== 9. （可选）删除其他不需要的 LuCI 应用 ====================
 # 如果您也不想编译 luci-app-ssr-plus 或 luci-app-passwall (v1)，可以一并删除：
