@@ -4,7 +4,7 @@ on:
   repository_dispatch:
   workflow_dispatch:
   schedule:
-    - cron: '38 18 * * 5'
+    - cron: '0 0 * * *'
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
