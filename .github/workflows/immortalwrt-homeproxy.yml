@@ -192,10 +192,10 @@ jobs:
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
         git add last_commit
         git commit -m "Update last build commit to $LATEST_COMMIT [skip ci]"
-        # 关键修正：先拉取远程最新变更并变基，避免 push 冲突
+        # 强制清除未暂存和未跟踪的文件，确保工作区干净
+        git reset --hard HEAD
         git pull --rebase origin ${{ github.ref_name }}
         git push
-
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@v2
       env:
