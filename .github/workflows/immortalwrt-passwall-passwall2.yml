@@ -103,15 +103,28 @@ jobs:
       - name: Load custom configuration
         run: |
           [ -e files ] && mv files openwrt/files
-          CONFIG_FILE="config/${{ matrix.variant }}.config"
-          if [ -e "$CONFIG_FILE" ]; then
-            mv "$CONFIG_FILE" openwrt/.config
+
+          # 使用绝对路径查找配置文件
+          CONFIG_SRC="$GITHUB_WORKSPACE/config/${{ matrix.variant }}.config"
+
+          if [ -f "$CONFIG_SRC" ]; then
+            echo "✅ 找到配置文件: $CONFIG_SRC"
+            cp "$CONFIG_SRC" openwrt/.config
           else
-            echo "❌ 配置文件 $CONFIG_FILE 不存在，请创建！"
+            echo "❌ 配置文件不存在: $CONFIG_SRC"
+            echo "当前 $GITHUB_WORKSPACE/config/ 目录内容:"
+            ls -la "$GITHUB_WORKSPACE/config/" 2>/dev/null || echo "config 目录不存在"
             exit 1
           fi
+
           chmod +x $DIY_P2_SH
           cd openwrt
+
+          # ★★★ 设置 VARIANT 环境变量 ★★★
+          export VARIANT="${{ matrix.variant }}"
+          echo "✅ VARIANT 已设置为: $VARIANT"
+
+          # 执行 DIY 脚本
           $GITHUB_WORKSPACE/$DIY_P2_SH
 
       - name: Download package
