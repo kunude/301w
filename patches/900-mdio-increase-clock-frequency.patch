@@ -1,0 +1,10 @@
+--- a/arch/arm64/boot/dts/qcom/ipq8072-301w.dts
++++ b/arch/arm64/boot/dts/qcom/ipq8072-301w.dts
+@@ -325,6 +325,7 @@
+ &mdio {
+ 	status = "okay";
++	clock-frequency = <6250000>; /* 6.25 MHz */
+ 
+ 	pinctrl-0 = <&mdio_pins>;
+ 	pinctrl-names = "default";
+ 	reset-gpios = <&tlmm 37 GPIO_ACTIVE_LOW>;
