@@ -99,6 +99,20 @@ jobs:
 
       - name: Install feeds
         run: cd openwrt && ./scripts/feeds install -a
+        
+       # ★ 新增：覆盖 DTS，必须在 make defconfig 之前
+      - name: Override QNAP 301w DTS
+        run: |
+          cd openwrt
+          DTS_PATH=$(find target/linux/qualcommax -name "ipq8072-301w.dts" | head -n 1)
+          echo "DTS path: $DTS_PATH"
+          if [ -z "$DTS_PATH" ]; then
+            echo "❌ 找不到 ipq8072-301w.dts"
+            exit 1
+          fi
+          cp $GITHUB_WORKSPACE/dts/ipq8072-301w.dts "$DTS_PATH"
+          echo "✅ 已覆盖 DTS"
+          grep -A 2 '^&mdio {' "$DTS_PATH"
 
       - name: Load custom configuration
         run: |
