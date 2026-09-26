@@ -29,8 +29,8 @@ jobs:
         run: |
           NEW_FP=""
           NEW_FP+=$(git ls-remote $REPO_URL refs/heads/$REPO_BRANCH | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/luci refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/immortalwrt/packages refs/heads/master | awk '{print $1}')
+          # NEW_FP+=$(git ls-remote https://github.com/immortalwrt/luci refs/heads/master | awk '{print $1}')
+          # NEW_FP+=$(git ls-remote https://github.com/immortalwrt/packages refs/heads/master | awk '{print $1}')
           # ★ 使用 kenzok8/small 替代原来的 openwrt-passwall 和 openwrt-passwall2
           NEW_FP+=$(git ls-remote https://github.com/kenzok8/small HEAD | awk '{print $1}')
           NEW_FP=$(echo "$NEW_FP" | md5sum | awk '{print $1}')
@@ -250,12 +250,6 @@ jobs:
           - **luci-app-passwall**: $VER_PASSWALL
           - **luci-app-passwall2**: $VER_PASSWALL2
           - **sing-box**: $VER_SINGBOX
-          ---
-          ### ⚠️ 刷机须知
-          1. **默认 IP**: 请查看您设备的默认配置（通常为 192.168.1.1）
-          2. **默认密码**: 无 (留空)
-          3. **Wi-Fi**: 刷机后请在后台设置
-          4. **包管理器**: 此版本使用 apk，不再支持 opkg
           ---
           ### 内置插件清单
           $PLUGINS
