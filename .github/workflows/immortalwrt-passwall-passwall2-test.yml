@@ -119,7 +119,7 @@ jobs:
           [ -e files ] && mv files openwrt/files
 
           # 使用绝对路径查找配置文件
-          CONFIG_SRC="$GITHUB_WORKSPACE/config/${{ matrix.variant }}.config"
+          CONFIG_SRC="$GITHUB_WORKSPACE/config/${{ matrix.variant }}test.config"
 
           if [ -f "$CONFIG_SRC" ]; then
             echo "✅ 找到配置文件: $CONFIG_SRC"
