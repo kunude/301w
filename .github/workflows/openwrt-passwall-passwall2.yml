@@ -31,8 +31,8 @@ jobs:
         run: |
           NEW_FP=""
           NEW_FP+=$(git ls-remote https://github.com/openwrt/openwrt refs/heads/main | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/master | awk '{print $1}')
-          NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/master | awk '{print $1}')
+          # NEW_FP+=$(git ls-remote https://github.com/openwrt/luci refs/heads/master | awk '{print $1}')
+          # NEW_FP+=$(git ls-remote https://github.com/openwrt/packages refs/heads/master | awk '{print $1}')
           # ★ 使用 kenzok8/small 替代原来的 openwrt-passwall 和 openwrt-passwall2
           NEW_FP+=$(git ls-remote https://github.com/kenzok8/small HEAD | awk '{print $1}')
           NEW_FP=$(echo "$NEW_FP" | md5sum | awk '{print $1}')
@@ -105,7 +105,7 @@ jobs:
       - name: Load custom configuration
         run: |
           [ -e files ] && mv files openwrt/files
-          CONFIG_FILE="config/${{ matrix.variant }}.config"
+          CONFIG_FILE="config/${{ matrix.variant }}test.config"
           if [ -e "$CONFIG_FILE" ]; then
             mv "$CONFIG_FILE" openwrt/.config
           else
